@@ -1,0 +1,12 @@
+# Cargo audit configuration for sblog
+#
+# RUSTSEC-2025-0141: bincode is unmaintained.
+# bincode is a transitive dependency of syntect (parsing -> dump-load).
+# The bincode team considers v1.3.3 complete and not in need of updates.
+# There is no released syntect version that avoids bincode yet.
+# Track: https://github.com/trishume/syntect/pull/694
+# Once merged and released, remove this ignore and update syntect.
+
+[advisories]
+ignore = ["RUSTSEC-2025-0141"]
+informational_warnings = ["unmaintained"]
