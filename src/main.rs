@@ -4,14 +4,12 @@ use std::path::{Path, PathBuf};
 use chrono::NaiveDate;
 use pulldown_cmark::{CodeBlockKind, Event, Options, Parser, Tag, TagEnd};
 use serde_yaml::Value;
-use syntect::html::{ClassedHTMLGenerator, ClassStyle};
+use syntect::html::{ClassStyle, ClassedHTMLGenerator};
 use syntect::parsing::SyntaxSet;
 use syntect::util::LinesWithEndings;
 use tera::{Context, Tera};
 
-use crate::models::{
-    Document, Post, PostView, SidebarView, SiteConfig, SiteView, TagView,
-};
+use crate::models::{Document, Post, PostView, SidebarView, SiteConfig, SiteView, TagView};
 
 mod models;
 
@@ -399,8 +397,8 @@ fn read_posts(dir: &Path) -> Vec<Post> {
 /// Parse frontmatter and body from a markdown file into a `Post`.
 fn parse_post(path: &Path, text: &str) -> Result<Post, String> {
     let (frontmatter, body) = split_frontmatter(text)?;
-    let meta: Value = serde_yaml::from_str(frontmatter)
-        .map_err(|e| format!("invalid frontmatter: {e}"))?;
+    let meta: Value =
+        serde_yaml::from_str(frontmatter).map_err(|e| format!("invalid frontmatter: {e}"))?;
 
     let title = get_str(&meta, "title").ok_or("missing title")?;
     let date_str = get_str(&meta, "date").ok_or("missing date")?;
@@ -611,8 +609,12 @@ fn document_for_index(config: &SiteConfig, posts: &[Post]) -> Document {
 
 /// Build the document for the archive page listing every post.
 fn document_for_archive(config: &SiteConfig, posts: &[Post]) -> Document {
-    let social_meta =
-        render_social_meta(config, "Archive", "Every post on this site.", "/archive.html");
+    let social_meta = render_social_meta(
+        config,
+        "Archive",
+        "Every post on this site.",
+        "/archive.html",
+    );
     let post_views = posts
         .iter()
         .map(|p| post_view(p, "post/", "tags/"))
@@ -660,8 +662,12 @@ fn document_for_archive(config: &SiteConfig, posts: &[Post]) -> Document {
 
 /// Build the document for the simple posts list page.
 fn document_for_posts(config: &SiteConfig, posts: &[Post]) -> Document {
-    let social_meta =
-        render_social_meta(config, "All posts", "Every article on this site.", "/posts.html");
+    let social_meta = render_social_meta(
+        config,
+        "All posts",
+        "Every article on this site.",
+        "/posts.html",
+    );
     let post_views = posts
         .iter()
         .map(|p| post_view(p, "post/", "tags/"))
@@ -700,8 +706,7 @@ fn document_for_posts(config: &SiteConfig, posts: &[Post]) -> Document {
 
 /// Build the document for the about page.
 fn document_for_about(root: &Path, config: &SiteConfig, posts: &[Post]) -> Document {
-    let social_meta =
-        render_social_meta(config, "About", "About me and this site.", "/about.html");
+    let social_meta = render_social_meta(config, "About", "About me and this site.", "/about.html");
     let about_path = root.join(&config.posts_dir).join("about.md");
     let about_text = fs::read_to_string(&about_path).unwrap_or_default();
     let (_, body) = split_frontmatter(&about_text).unwrap_or(("", ""));
@@ -789,12 +794,7 @@ fn document_for_post(config: &SiteConfig, post: &Post, all: &[Post]) -> Document
     }
 }
 
-fn document_for_tag(
-    config: &SiteConfig,
-    tag: &str,
-    tag_posts: &[&Post],
-    all: &[Post],
-) -> Document {
+fn document_for_tag(config: &SiteConfig, tag: &str, tag_posts: &[&Post], all: &[Post]) -> Document {
     let social_meta = render_social_meta(
         config,
         &format!("Posts tagged {tag}"),
@@ -839,8 +839,12 @@ fn document_for_tag(
 
 /// Build the document for the tag index page.
 fn document_for_tag_index(config: &SiteConfig, tags: &[(String, Vec<&Post>)]) -> Document {
-    let social_meta =
-        render_social_meta(config, "Tags", "Every tag on this site.", "/tags/index.html");
+    let social_meta = render_social_meta(
+        config,
+        "Tags",
+        "Every tag on this site.",
+        "/tags/index.html",
+    );
     let tag_views = tags
         .iter()
         .map(|(tag, tag_posts)| TagView {
@@ -945,8 +949,7 @@ fn css_href(config: &SiteConfig, depth: &str) -> String {
 
 /// Collect every tag and the posts that carry it, sorted by tag name.
 fn collect_tags(posts: &[Post]) -> Vec<(String, Vec<&Post>)> {
-    let mut map: std::collections::BTreeMap<String, Vec<&Post>> =
-        std::collections::BTreeMap::new();
+    let mut map: std::collections::BTreeMap<String, Vec<&Post>> = std::collections::BTreeMap::new();
     for post in posts {
         for tag in &post.tags {
             map.entry(tag.clone()).or_default().push(post);
