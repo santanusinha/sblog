@@ -50,11 +50,13 @@ fn build_site(root: &Path, config: &SiteConfig) -> Vec<Post> {
     // Copy the static assets (including the stylesheet) to the output.
     copy_static(root, config);
 
-    // Build each post page.
+    // Build each post page into the post/ subdirectory.
+    let post_dir = public_dir.join("post");
+    fs::create_dir_all(&post_dir).expect("create post dir");
     for post in &posts {
         let doc = document_for_post(config, post, &posts);
         let html = render(&tera, "post.html", &doc);
-        let path = public_dir.join(format!("{}.html", post.slug));
+        let path = post_dir.join(format!("{}.html", post.slug));
         fs::write(&path, html).expect("write post page");
     }
 
@@ -91,10 +93,9 @@ fn build_site(root: &Path, config: &SiteConfig) -> Vec<Post> {
     let doc = document_for_tag_index(config, &tags);
     let html = render(&tera, "tags.html", &doc);
     fs::write(tags_dir.join("index.html"), html).expect("write tag index");
-    // Remove orphaned post pages whose source markdown no longer exists.
+
+    // Remove old root-level post pages (they now live in post/).
     // Aggregate pages (index, archive, posts, about) and the stylesheet are kept.
-    let valid_slugs: std::collections::HashSet<String> =
-        posts.iter().map(|p| p.slug.clone()).collect();
     let aggregate = ["index", "archive", "posts", "about"];
     if let Ok(entries) = fs::read_dir(&public_dir) {
         for entry in entries.flatten() {
@@ -110,9 +111,29 @@ fn build_site(root: &Path, config: &SiteConfig) -> Vec<Post> {
             if aggregate.contains(&stem.as_str()) {
                 continue;
             }
+            // Any other root-level html is an old post page; remove it.
+            fs::remove_file(&path).expect("remove old post page");
+            println!("Removed old post page {}", path.display());
+        }
+    }
+
+    // Remove orphaned post pages in post/ whose source markdown no longer exists.
+    let valid_slugs: std::collections::HashSet<String> =
+        posts.iter().map(|p| p.slug.clone()).collect();
+    if let Ok(entries) = fs::read_dir(&post_dir) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.extension().and_then(|e| e.to_str()) != Some("html") {
+                continue;
+            }
+            let stem = path
+                .file_stem()
+                .and_then(|s| s.to_str())
+                .unwrap_or_default()
+                .to_string();
             if !valid_slugs.contains(&stem) {
                 fs::remove_file(&path).expect("remove orphaned post page");
-                println!("Removed orphaned page {}", path.display());
+                println!("Removed orphaned post page {}", path.display());
             }
         }
     }
@@ -170,9 +191,12 @@ fn build_stale(root: &Path, config: &SiteConfig) -> Vec<Post> {
 
     let mut changed_any = false;
 
+    let post_dir = public_dir.join("post");
+    fs::create_dir_all(&post_dir).expect("create post dir");
+
     for post in &posts {
         let src = posts_dir.join(format!("{}.md", post.slug));
-        let out = public_dir.join(format!("{}.html", post.slug));
+        let out = post_dir.join(format!("{}.html", post.slug));
         if is_stale(&src, &out) {
             let doc = document_for_post(config, post, &posts);
             let html = render(&tera, "post.html", &doc);
@@ -186,7 +210,7 @@ fn build_stale(root: &Path, config: &SiteConfig) -> Vec<Post> {
         || !index_path.exists()
         || posts.iter().any(|p| {
             let src = posts_dir.join(format!("{}.md", p.slug));
-            let out = public_dir.join(format!("{}.html", p.slug));
+            let out = post_dir.join(format!("{}.html", p.slug));
             is_stale(&src, &out)
         });
     if index_stale {
@@ -540,14 +564,14 @@ fn render(tera: &Tera, template: &str, doc: &Document) -> String {
 fn document_for_index(config: &SiteConfig, posts: &[Post]) -> Document {
     let social_meta = render_social_meta(config, "", &config.tagline, "/index.html");
     let latest = posts.first();
-    let current = latest.map(|p| post_view(p, "", "tags/"));
-    let sidebar = sidebar_view(config, posts, "", "tags/", "");
+    let current = latest.map(|p| post_view(p, "post/", "tags/"));
+    let sidebar = sidebar_view(config, posts, "post/", "tags/", "", "posts.html");
     // The home page lists up to 10 posts: the first is the featured card
     // and the rest fill the card grid.
     let home_posts = posts
         .iter()
         .take(10)
-        .map(|p| post_view(p, "", "tags/"))
+        .map(|p| post_view(p, "post/", "tags/"))
         .collect::<Vec<_>>();
     let tags = collect_tags(posts);
     let tag_views = tags
@@ -584,13 +608,14 @@ fn document_for_index(config: &SiteConfig, posts: &[Post]) -> Document {
         tag: None,
     }
 }
+
 /// Build the document for the archive page listing every post.
 fn document_for_archive(config: &SiteConfig, posts: &[Post]) -> Document {
     let social_meta =
         render_social_meta(config, "Archive", "Every post on this site.", "/archive.html");
     let post_views = posts
         .iter()
-        .map(|p| post_view(p, "", "tags/"))
+        .map(|p| post_view(p, "post/", "tags/"))
         .collect::<Vec<_>>();
     let tags = collect_tags(posts);
     let tag_views = tags
@@ -639,7 +664,7 @@ fn document_for_posts(config: &SiteConfig, posts: &[Post]) -> Document {
         render_social_meta(config, "All posts", "Every article on this site.", "/posts.html");
     let post_views = posts
         .iter()
-        .map(|p| post_view(p, "", "tags/"))
+        .map(|p| post_view(p, "post/", "tags/"))
         .collect::<Vec<_>>();
     Document {
         title: format!("All posts — {}", config.title),
@@ -692,7 +717,7 @@ fn document_for_about(root: &Path, config: &SiteConfig, posts: &[Post]) -> Docum
         tags: Vec::new(),
         body_html,
     };
-    let sidebar = sidebar_view(config, posts, "", "tags/", "");
+    let sidebar = sidebar_view(config, posts, "post/", "tags/", "", "posts.html");
     Document {
         title: format!("About — {}", config.title),
         site_title: config.title.clone(),
@@ -726,20 +751,20 @@ fn document_for_post(config: &SiteConfig, post: &Post, all: &[Post]) -> Document
         config,
         &post.title,
         &post.summary,
-        &format!("/{}.html", post.slug),
+        &format!("/post/{}.html", post.slug),
     );
-    let current = post_view(post, "", "tags/");
+    let current = post_view(post, "", "../tags/");
     // Posts are sorted newest-first. "Prev" is the newer post (the one
     // before this one in the list); "Next" is the older post (the one after).
     // The latest post has no newer post, so its prev link is absent.
     let idx = all.iter().position(|p| p.slug == post.slug);
     let prev_post = idx
         .and_then(|i| i.checked_sub(1))
-        .map(|i| post_view(&all[i], "", "tags/"));
+        .map(|i| post_view(&all[i], "", "../tags/"));
     let next_post = idx
         .and_then(|i| all.get(i + 1))
-        .map(|p| post_view(p, "", "tags/"));
-    let sidebar = sidebar_view(config, all, "", "tags/", &post.slug);
+        .map(|p| post_view(p, "", "../tags/"));
+    let sidebar = sidebar_view(config, all, "", "../tags/", &post.slug, "../posts.html");
     Document {
         title: format!("{} — {}", post.title, config.title),
         site_title: config.title.clone(),
@@ -748,11 +773,11 @@ fn document_for_post(config: &SiteConfig, post: &Post, all: &[Post]) -> Document
         header_title: config.header_title.clone(),
         header_tagline: config.header_tagline.clone(),
         year: post.date.format("%Y").to_string(),
-        css_href: css_href(config, ""),
-        home_href: "index.html".to_string(),
-        archive_href: "archive.html".to_string(),
-        tags_href: "tags/index.html".to_string(),
-        about_href: "about.html".to_string(),
+        css_href: css_href(config, "../"),
+        home_href: "../index.html".to_string(),
+        archive_href: "../archive.html".to_string(),
+        tags_href: "../tags/index.html".to_string(),
+        about_href: "../about.html".to_string(),
         active_nav: "latest".to_string(),
         posts: Vec::new(),
         post: Some(current),
@@ -778,9 +803,9 @@ fn document_for_tag(
     );
     let post_views = tag_posts
         .iter()
-        .map(|p| post_view(p, "../", "../tags/"))
+        .map(|p| post_view(p, "../post/", "../tags/"))
         .collect::<Vec<_>>();
-    let sidebar = sidebar_view(config, all, "../", "../tags/", "");
+    let sidebar = sidebar_view(config, all, "../post/", "../tags/", "", "../posts.html");
     Document {
         title: format!("Posts tagged {tag} — {}", config.title),
         site_title: config.title.clone(),
@@ -885,6 +910,7 @@ fn sidebar_view(
     href_prefix: &str,
     tag_prefix: &str,
     exclude_slug: &str,
+    archive_href: &str,
 ) -> SidebarView {
     let essays = posts
         .iter()
@@ -900,16 +926,11 @@ fn sidebar_view(
             count: tag_posts.len(),
         })
         .collect::<Vec<_>>();
-    let archive_href = if href_prefix.is_empty() {
-        "posts.html".to_string()
-    } else {
-        format!("{}posts.html", href_prefix)
-    };
     SidebarView {
         older_count: essays.len(),
         essays,
         tags,
-        archive_href,
+        archive_href: archive_href.to_string(),
     }
 }
 
