@@ -14,6 +14,6 @@ chrono = "0.4"
 pulldown-cmark = "0.13"
 serde = { version = "1", features = ["derive"] }
 serde_yaml = "0.9"
-syntect = "5"
+syntect = { git = "https://github.com/SebTardif/syntect", branch = "replace-bincode-with-serde-wincode", default-features = false, features = ["parsing", "html", "default-syntaxes", "regex-onig"] }
 tera = { version = "2", features = ["glob_fs"] }
 toml = "0.8"
