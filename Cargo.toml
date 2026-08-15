@@ -1,0 +1,13 @@
+[package]
+name = "sblog"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+chrono = "0.4"
+pulldown-cmark = "0.13"
+serde = { version = "1", features = ["derive"] }
+serde_yaml = "0.9"
+syntect = "5"
+tera = { version = "2", features = ["glob_fs"] }
+toml = "0.8"

@@ -1,0 +1,16 @@
+title = "sblog"
+tagline = "A tiny static blog"
+base_url = "https://example.com"
+og_image = "https://example.com/og-image.png"
+twitter_handle = "sblog"
+
+# Paths (relative to the project root).
+posts_dir = "posts"
+output_dir = "public"
+templates_dir = "templates"
+static_dir = "static"
+css_file = "static/style.css"
+
+[header]
+title = "My Blog"
+tagline = "A tiny static blog"
