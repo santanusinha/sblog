@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block title %}About — {{ site.title }}{% endblock title %}
+{% block description %}About me and this site.{% endblock description %}
+{% block social_meta %}{{ social_meta | safe }}{% endblock social_meta %}
+
+{% block content %}
+  <div class="about-layout">
+    <div class="about-col">
+      <div class="about-intro">
+        <div class="about-portrait-wrap about-portrait-mobile">
+          <img class="about-portrait" src="images/profile.png" alt="Portrait of Santanu Sinha">
+        </div>
+        <div class="article about-article">
+{{ post.body_html | safe }}
+        </div>
+      </div>
+    </div>
+    <aside class="about-sidebar">
+      <div class="about-portrait-wrap about-portrait-sidebar">
+        <img class="about-portrait" src="images/profile.png" alt="Portrait of Santanu Sinha">
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-head">
+          <h3>Elsewhere</h3>
+        </div>
+        <ul class="sidebar-list about-links">
+          <li>
+            <a href="https://github.com/santanusinha">GitHub</a>
+          </li>
+          <li>
+            <a href="https://in.linkedin.com/in/sinhasantanu">LinkedIn</a>
+          </li>
+          <li>
+            <a href="https://twitter.com/santanu_sinha">Twitter</a>
+          </li>
+        </ul>
+      </div>
+      <div class="sidebar-section">
+        <div class="sidebar-head">
+          <h3>Recent</h3>
+        </div>
+        <ul class="sidebar-list">
+          {% for essay in sidebar.essays %}
+          <li>
+            <time>{{ essay.date_short }}</time>
+            <a href="{{ essay.href }}">{{ essay.title }}</a>
+          </li>
+          {% endfor %}
+        </ul>
+        <a class="all-tags-link" href="{{ sidebar.archive_href }}">All posts &rarr;</a>
+      </div>
+    </aside>
+  </div>
+{% endblock content %}

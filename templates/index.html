@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}{{ site.title }}{% endblock title %}
+{% block description %}{{ site.tagline }}{% endblock description %}
+{% block social_meta %}{{ social_meta | safe }}{% endblock social_meta %}
+
+{% block content %}
+  <div class="home-layout">
+    <div class="home-col">
+      {% if posts %}
+      <a class="featured-card" href="{{ posts[0].href }}">
+        <div class="featured-meta">
+          <span>{{ posts[0].date_long }}</span>
+          <span class="dot"></span>
+          <span>{{ posts[0].read_time }}</span>
+        </div>
+        <h2 class="featured-title">{{ posts[0].title }}</h2>
+        <p class="featured-summary">{{ posts[0].summary }}</p>
+        {% if posts[0].tags %}<div class="featured-tags">
+          {% for t in posts[0].tags %}<span class="tag">{{ t.name }}</span>{% endfor %}
+        </div>{% endif %}
+      </a>
+
+      <div class="card-grid">
+        {% for post in posts %}
+        {% if loop.index > 1 %}
+        <a class="post-card" href="{{ post.href }}">
+          <div class="post-card-meta">
+            <time>{{ post.date_short }}</time>
+            <span class="dot"></span>
+            <span>{{ post.read_time }}</span>
+          </div>
+          <h3 class="post-card-title">{{ post.title }}</h3>
+          <p class="post-card-summary">{{ post.summary }}</p>
+          {% if post.tags %}<div class="post-card-tags">
+            {% for t in post.tags %}<span class="tag">{{ t.name }}</span>{% endfor %}
+          </div>{% endif %}
+        </a>
+        {% endif %}
+        {% endfor %}
+      </div>
+
+      {% if (posts | length) > 10 %}
+      <a class="all-posts-link" href="{{ archive_href }}">All posts &rarr;</a>
+      {% endif %}
+      {% endif %}
+    </div>
+
+    <aside class="home-sidebar">
+      <div class="sidebar-section">
+        <div class="sidebar-head">
+          <h3>Topics</h3>
+        </div>
+        <ul class="topic-list">
+          {% for tag in tags %}
+          <li>
+            <a class="tag-link" href="{{ tag.href }}">#{{ tag.name }}</a>
+            <span class="tag-count">{{ tag.count }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+        <a class="all-tags-link" href="{{ tags_href }}">All tags &rarr;</a>
+      </div>
+    </aside>
+  </div>
+{% endblock content %}

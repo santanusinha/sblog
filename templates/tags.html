@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}Tags — {{ site.title }}{% endblock title %}
+{% block description %}Every tag on this site.{% endblock description %}
+{% block social_meta %}{{ social_meta | safe }}{% endblock social_meta %}
+
+{% block content %}
+  <div class="tag-head">
+    <h1>Tags</h1>
+    <p class="tag-count">{{ tags | length }} tag{{ 's' if tags | length != 1 else '' }}</p>
+  </div>
+  <ul class="tag-list">
+    {% for tag in tags %}
+    <li>
+      <a class="tag-link" href="{{ tag.href }}">#{{ tag.name }}</a>
+      <span class="tag-count">{{ tag.count }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+{% endblock content %}

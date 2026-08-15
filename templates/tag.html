@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+
+{% block title %}Posts tagged {{ tag.name }} — {{ site.title }}{% endblock title %}
+{% block description %}All posts tagged {{ tag.name }}.{% endblock description %}
+{% block social_meta %}{{ social_meta | safe }}{% endblock social_meta %}
+
+{% block content %}
+  <div class="tag-head">
+    <h1>#{{ tag.name }}</h1>
+    <p class="tag-count">{{ tag.count }} post{{ 's' if tag.count != 1 else '' }}</p>
+  </div>
+  <ul class="post-list">
+    {% for post in posts %}
+    <li>
+      <p class="post-date">{{ post.date_long }}</p>
+      <h2 class="post-title"><a href="{{ post.href }}">{{ post.title }}</a></h2>
+      <p class="post-summary">{{ post.summary }}</p>
+      {% if post.tags %}<div class="post-tags">
+        {% for t in post.tags %}<a class="tag" href="{{ t.href }}">{{ t.name }}</a>{% endfor %}
+      </div>{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+{% endblock content %}
