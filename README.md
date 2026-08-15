@@ -25,13 +25,15 @@ output with any static host.
 - Rust toolchain (edition 2024)
 - Cargo
 
-### 2. Build the binary
+### 2. Install the binary
+
+Install the latest release from crates.io:
 
 ```bash
-cargo build --release
+cargo install sblog
 ```
 
-The binary is at `target/release/sblog`.
+The binary is `sblog`. It is available on your `PATH` after install.
 
 ### 3. Set up your project structure
 
@@ -57,8 +59,11 @@ my-blog/
 └── public/              # Generated output (created by the build)
 ```
 
-Copy the `templates/` and `static/` directories from this repository, or
-write your own. Copy `config.toml` and edit it to match your site.
+Copy the [`templates/`](https://github.com/santanusinha/sblog/tree/master/templates) and
+[`static/`](https://github.com/santanusinha/sblog/tree/master/static) directories from the
+[GitHub repository](https://github.com/santanusinha/sblog), or write your own. Copy
+[`config.toml`](https://github.com/santanusinha/sblog/blob/master/config.toml) and edit it to
+match your site.
 
 ### 4. Configure `config.toml`
 
@@ -136,10 +141,10 @@ The **filename** becomes the URL slug. `hello-world.md` → `/post/hello-world.h
 
 ```bash
 # Full rebuild (all posts, removes orphaned output)
-cargo run -- --full
+sblog --full
 
 # Incremental build (only changed posts)
-cargo run
+sblog
 ```
 
 Output goes to `public/`.
@@ -376,7 +381,7 @@ Available on the **index**, **post**, and **about** pages.
 ### Full build (`--full`)
 
 ```bash
-cargo run -- --full
+sblog --full
 ```
 
 - Rebuilds **every** page
@@ -387,7 +392,7 @@ cargo run -- --full
 ### Incremental build (default)
 
 ```bash
-cargo run
+sblog
 ```
 
 - Rebuilds only posts whose source is newer than their output

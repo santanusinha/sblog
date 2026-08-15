@@ -959,6 +959,17 @@ main.wrap {
   color: var(--text);
 }
 
+.footer-copy a {
+  color: var(--text-faint);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color 0.2s ease;
+}
+
+.footer-copy a:hover {
+  color: var(--text);
+}
+
 /* ============================================================
    Responsive
    ============================================================ */
