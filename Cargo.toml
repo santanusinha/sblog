@@ -2,6 +2,12 @@
 name = "sblog"
 version = "0.1.0"
 edition = "2024"
+description = "A tiny static blog generator written in Rust. Write posts in Markdown with YAML frontmatter and render them into plain HTML and CSS."
+license = "MIT"
+readme = "README.md"
+repository = "https://github.com/santanusinha/sblog"
+keywords = ["blog", "static-site", "markdown", "generator", "ssg"]
+categories = ["command-line-utilities", "web-programming"]
 
 [dependencies]
 chrono = "0.4"
