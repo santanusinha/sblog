@@ -1,5 +1,5 @@
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use chrono::NaiveDate;
 use pulldown_cmark::{CodeBlockKind, Event, Options, Parser, Tag, TagEnd};
@@ -14,7 +14,7 @@ use crate::models::{Document, Post, PostView, SidebarView, SiteConfig, SiteView,
 mod models;
 
 fn main() {
-    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let root = std::env::current_dir().expect("get current directory");
     let full = std::env::args().any(|a| a == "--full");
     let config = load_config(&root);
     if full {
