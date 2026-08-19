@@ -277,11 +277,7 @@ fn build_stale(root: &Path, config: &SiteConfig) -> Vec<Post> {
     let robots_path = public_dir.join("robots.txt");
     let sitemap_path = public_dir.join("sitemap.xml");
     let feed_path = public_dir.join("feed.xml");
-    if changed_any
-        || !robots_path.exists()
-        || !sitemap_path.exists()
-        || !feed_path.exists()
-    {
+    if changed_any || !robots_path.exists() || !sitemap_path.exists() || !feed_path.exists() {
         write_seo_files(config, &posts, &tags, &public_dir);
     }
 
@@ -1093,10 +1089,7 @@ fn render_rss_feed(config: &SiteConfig, posts: &[Post]) -> String {
         "    <title>{}</title>\n",
         escape_xml(&config.title)
     ));
-    xml.push_str(&format!(
-        "    <link>{}/</link>\n",
-        escape_xml(&base)
-    ));
+    xml.push_str(&format!("    <link>{}/</link>\n", escape_xml(&base)));
     xml.push_str(&format!(
         "    <description>{}</description>\n",
         escape_xml(&config.tagline)
