@@ -20,6 +20,11 @@
       <a href="{{ home_href }}" class="{{ 'active' if active_nav == 'latest' else '' }}">Home</a>
       <a href="{{ archive_href }}" class="{{ 'active' if active_nav == 'archive' else '' }}">Archive</a>
       <a href="{{ about_href }}" class="{{ 'active' if active_nav == 'about' else '' }}">About</a>
+      <a href="{{ feed_href }}" class="rss-link" title="RSS feed" aria-label="RSS feed">
+        <svg class="rss-icon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
+          <path d="M6.18 17.82a2.18 2.18 0 1 1 0 4.36 2.18 2.18 0 0 1 0-4.36zM4 4.44v2.83c7.03 0 12.73 5.7 12.73 12.73h2.83C19.56 11.09 12.91 4.44 4 4.44zm0 5.66v2.83c3.9 0 7.07 3.17 7.07 7.07h2.83c0-5.47-4.43-9.9-9.9-9.9z"/>
+        </svg>
+      </a>
     </nav>
   </div>
 </header>

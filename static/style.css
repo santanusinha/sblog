@@ -272,6 +272,21 @@ body {
   text-underline-offset: 4px;
 }
 
+.header-nav .rss-link {
+  display: flex;
+  align-items: center;
+  color: var(--text-faint);
+  transition: color 0.2s ease;
+}
+
+.header-nav .rss-link:hover {
+  color: var(--accent);
+}
+
+.header-nav .rss-icon {
+  display: block;
+}
+
 /* ============================================================
    Main content
    ============================================================ */
