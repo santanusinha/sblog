@@ -189,13 +189,21 @@ fn build_stale(root: &Path, config: &SiteConfig) -> Vec<Post> {
 
     let mut changed_any = false;
 
+    // Check if config.toml changed since the last build.
+    let config_path = root.join("config.toml");
+    let index_path = public_dir.join("index.html");
+    let config_changed = is_stale(&config_path, &index_path);
+    if config_changed {
+        changed_any = true;
+    }
+
     let post_dir = public_dir.join("post");
     fs::create_dir_all(&post_dir).expect("create post dir");
 
     for post in &posts {
         let src = posts_dir.join(format!("{}.md", post.slug));
         let out = post_dir.join(format!("{}.html", post.slug));
-        if is_stale(&src, &out) {
+        if config_changed || is_stale(&src, &out) {
             let doc = document_for_post(config, post, &posts);
             let html = render(&tera, "post.html", &doc);
             fs::write(&out, html).expect("write post page");
@@ -234,7 +242,7 @@ fn build_stale(root: &Path, config: &SiteConfig) -> Vec<Post> {
     // Build the about page if stale or missing.
     let about_src = posts_dir.join("about.md");
     let about_path = public_dir.join("about.html");
-    if is_stale(&about_src, &about_path) || !about_path.exists() {
+    if config_changed || is_stale(&about_src, &about_path) || !about_path.exists() {
         let doc = document_for_about(root, config, &posts);
         let html = render(&tera, "about.html", &doc);
         fs::write(&about_path, html).expect("write about.html");
