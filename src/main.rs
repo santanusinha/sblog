@@ -92,6 +92,9 @@ fn build_site(root: &Path, config: &SiteConfig) -> Vec<Post> {
     let html = render(&tera, "tags.html", &doc);
     fs::write(tags_dir.join("index.html"), html).expect("write tag index");
 
+    // Write the SEO files (robots.txt and sitemap.xml).
+    write_seo_files(config, &posts, &tags, &public_dir);
+
     // Remove old root-level post pages (they now live in post/).
     // Aggregate pages (index, archive, posts, about) and the stylesheet are kept.
     let aggregate = ["index", "archive", "posts", "about"];
@@ -267,6 +270,14 @@ fn build_stale(root: &Path, config: &SiteConfig) -> Vec<Post> {
         let doc = document_for_tag_index(config, &tags);
         let html = render(&tera, "tags.html", &doc);
         fs::write(tags_dir.join("index.html"), html).expect("write tag index");
+    }
+
+    // Write the SEO files (robots.txt and sitemap.xml) when the config or
+    // any post changed, or when they are missing.
+    let robots_path = public_dir.join("robots.txt");
+    let sitemap_path = public_dir.join("sitemap.xml");
+    if changed_any || !robots_path.exists() || !sitemap_path.exists() {
+        write_seo_files(config, &posts, &tags, &public_dir);
     }
 
     println!(
@@ -980,6 +991,71 @@ fn slugify(tag: &str) -> String {
         out.push_str("tag");
     }
     out
+}
+
+/// Write the SEO files (robots.txt and sitemap.xml) to the output directory.
+fn write_seo_files(
+    config: &SiteConfig,
+    posts: &[Post],
+    tags: &[(String, Vec<&Post>)],
+    public_dir: &Path,
+) {
+    let robots = render_robots_txt(config);
+    fs::write(public_dir.join("robots.txt"), robots).expect("write robots.txt");
+
+    let sitemap = render_sitemap_xml(config, posts, tags);
+    fs::write(public_dir.join("sitemap.xml"), sitemap).expect("write sitemap.xml");
+}
+
+/// Render the robots.txt content. If base_url is set, include a sitemap
+/// reference. Otherwise allow all crawlers and skip the sitemap line.
+fn render_robots_txt(config: &SiteConfig) -> String {
+    let mut out = String::new();
+    out.push_str("User-agent: *\n");
+    out.push_str("Allow: /\n");
+    if !config.base_url.is_empty() {
+        out.push_str(&format!("Sitemap: {}/sitemap.xml\n", config.base_url));
+    }
+    out
+}
+
+/// Render the sitemap.xml content. The sitemap lists every post, the tag
+/// pages, and the main pages. It uses absolute URLs from base_url.
+fn render_sitemap_xml(
+    config: &SiteConfig,
+    posts: &[Post],
+    tags: &[(String, Vec<&Post>)],
+) -> String {
+    let base = if config.base_url.is_empty() {
+        String::new()
+    } else {
+        config.base_url.clone()
+    };
+
+    let mut urls: Vec<String> = Vec::new();
+    urls.push("/".to_string());
+    urls.push("/archive.html".to_string());
+    urls.push("/posts.html".to_string());
+    urls.push("/about.html".to_string());
+    urls.push("/tags/index.html".to_string());
+    for post in posts {
+        urls.push(format!("/post/{}.html", post.slug));
+    }
+    for (tag, _tag_posts) in tags {
+        urls.push(format!("/tags/{}.html", slugify(tag)));
+    }
+
+    let mut xml = String::new();
+    xml.push_str("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+    xml.push_str("<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n");
+    for url in &urls {
+        let full = format!("{}{}", base, url);
+        xml.push_str("  <url>\n");
+        xml.push_str(&format!("    <loc>{}</loc>\n", escape_html(&full)));
+        xml.push_str("  </url>\n");
+    }
+    xml.push_str("</urlset>\n");
+    xml
 }
 
 /// Build the Open Graph and Twitter Card meta tags for a page.

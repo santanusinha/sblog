@@ -11,8 +11,8 @@ output with any static host.
 - **Syntax highlighting** for code blocks (via syntect)
 - **Tag pages** generated automatically from post frontmatter
 - **Open Graph & Twitter Card** meta tags
+- **robots.txt & sitemap.xml** generated automatically for search engines and agents
 - **Reading time** estimated per post
-- **Incremental builds** — only rebuild changed posts
 - **Full rebuild** with orphan cleanup
 - **Static asset copying** — CSS, images, and more
 
@@ -90,7 +90,7 @@ tagline = "A tiny static blog"
 |-----|-------------|---------|
 | `title` | Site title, used in `<title>` and footer | `sblog` |
 | `tagline` | Short site description | `A tiny static blog` |
-| `base_url` | Absolute URL for social meta tags | *(empty)* |
+| `base_url` | Absolute URL for social meta tags and sitemap | *(empty)* |
 | `og_image` | Absolute URL of the Open Graph image | *(empty)* |
 | `twitter_handle` | Twitter handle (without `@`) for card meta | *(empty)* |
 | `posts_dir` | Directory holding Markdown posts | `posts` |
@@ -397,6 +397,7 @@ sblog
 
 - Rebuilds only posts whose source is newer than their output
 - Rebuilds aggregate pages (index, archive, posts) when any post changed
+- Regenerates `robots.txt` and `sitemap.xml` when the config or any post changed
 - Copies static assets every time (idempotent)
 
 ---
@@ -419,6 +420,8 @@ public/
 │   ├── rust.html
 │   └── ...
 ├── style.css           # Stylesheet (copied from static/)
+├── robots.txt           # Crawler rules (generated)
+├── sitemap.xml          # URL list for search engines (generated)
 └── images/             # Static images (copied from static/)
 ```
 
