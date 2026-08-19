@@ -272,11 +272,16 @@ fn build_stale(root: &Path, config: &SiteConfig) -> Vec<Post> {
         fs::write(tags_dir.join("index.html"), html).expect("write tag index");
     }
 
-    // Write the SEO files (robots.txt and sitemap.xml) when the config or
-    // any post changed, or when they are missing.
+    // Write the SEO files (robots.txt, sitemap.xml, and feed.xml) when the
+    // config or any post changed, or when they are missing.
     let robots_path = public_dir.join("robots.txt");
     let sitemap_path = public_dir.join("sitemap.xml");
-    if changed_any || !robots_path.exists() || !sitemap_path.exists() {
+    let feed_path = public_dir.join("feed.xml");
+    if changed_any
+        || !robots_path.exists()
+        || !sitemap_path.exists()
+        || !feed_path.exists()
+    {
         write_seo_files(config, &posts, &tags, &public_dir);
     }
 
@@ -564,6 +569,7 @@ fn render(tera: &Tera, template: &str, doc: &Document) -> String {
     context.insert("archive_href", &doc.archive_href);
     context.insert("tags_href", &doc.tags_href);
     context.insert("about_href", &doc.about_href);
+    context.insert("feed_href", &doc.feed_href);
     context.insert("active_nav", &doc.active_nav);
     context.insert("posts", &doc.posts);
     context.insert("post", &doc.post);
@@ -615,6 +621,7 @@ fn document_for_index(config: &SiteConfig, posts: &[Post]) -> Document {
         archive_href: "archive.html".to_string(),
         tags_href: "tags/index.html".to_string(),
         about_href: "about.html".to_string(),
+        feed_href: "feed.xml".to_string(),
         active_nav: "latest".to_string(),
         posts: home_posts,
         post: current,
@@ -663,6 +670,7 @@ fn document_for_archive(config: &SiteConfig, posts: &[Post]) -> Document {
         archive_href: "archive.html".to_string(),
         tags_href: "tags/index.html".to_string(),
         about_href: "about.html".to_string(),
+        feed_href: "feed.xml".to_string(),
         active_nav: "archive".to_string(),
         posts: post_views,
         post: None,
@@ -707,6 +715,7 @@ fn document_for_posts(config: &SiteConfig, posts: &[Post]) -> Document {
         archive_href: "archive.html".to_string(),
         tags_href: "tags/index.html".to_string(),
         about_href: "about.html".to_string(),
+        feed_href: "feed.xml".to_string(),
         active_nav: "archive".to_string(),
         posts: post_views,
         post: None,
@@ -758,6 +767,7 @@ fn document_for_about(root: &Path, config: &SiteConfig, posts: &[Post]) -> Docum
         archive_href: "archive.html".to_string(),
         tags_href: "tags/index.html".to_string(),
         about_href: "about.html".to_string(),
+        feed_href: "feed.xml".to_string(),
         active_nav: "about".to_string(),
         posts: Vec::new(),
         post: Some(about_view),
@@ -802,6 +812,7 @@ fn document_for_post(config: &SiteConfig, post: &Post, all: &[Post]) -> Document
         archive_href: "../archive.html".to_string(),
         tags_href: "../tags/index.html".to_string(),
         about_href: "../about.html".to_string(),
+        feed_href: "../feed.xml".to_string(),
         active_nav: "latest".to_string(),
         posts: Vec::new(),
         post: Some(current),
@@ -841,6 +852,7 @@ fn document_for_tag(config: &SiteConfig, tag: &str, tag_posts: &[&Post], all: &[
         archive_href: "../archive.html".to_string(),
         tags_href: "index.html".to_string(),
         about_href: "../about.html".to_string(),
+        feed_href: "../feed.xml".to_string(),
         active_nav: "archive".to_string(),
         posts: post_views,
         post: None,
@@ -889,6 +901,7 @@ fn document_for_tag_index(config: &SiteConfig, tags: &[(String, Vec<&Post>)]) ->
         archive_href: "../archive.html".to_string(),
         tags_href: "index.html".to_string(),
         about_href: "../about.html".to_string(),
+        feed_href: "../feed.xml".to_string(),
         active_nav: "archive".to_string(),
         posts: Vec::new(),
         post: None,
@@ -993,7 +1006,8 @@ fn slugify(tag: &str) -> String {
     out
 }
 
-/// Write the SEO files (robots.txt and sitemap.xml) to the output directory.
+/// Write the SEO files (robots.txt, sitemap.xml, and feed.xml) to the
+/// output directory.
 fn write_seo_files(
     config: &SiteConfig,
     posts: &[Post],
@@ -1005,6 +1019,9 @@ fn write_seo_files(
 
     let sitemap = render_sitemap_xml(config, posts, tags);
     fs::write(public_dir.join("sitemap.xml"), sitemap).expect("write sitemap.xml");
+
+    let feed = render_rss_feed(config, posts);
+    fs::write(public_dir.join("feed.xml"), feed).expect("write feed.xml");
 }
 
 /// Render the robots.txt content. If base_url is set, include a sitemap
@@ -1056,6 +1073,87 @@ fn render_sitemap_xml(
     }
     xml.push_str("</urlset>\n");
     xml
+}
+
+/// Render the RSS 2.0 feed (feed.xml) content. The feed lists every post
+/// with its title, link, description, and publication date. It uses
+/// absolute URLs from base_url.
+fn render_rss_feed(config: &SiteConfig, posts: &[Post]) -> String {
+    let base = if config.base_url.is_empty() {
+        String::new()
+    } else {
+        config.base_url.clone()
+    };
+
+    let mut xml = String::new();
+    xml.push_str("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+    xml.push_str("<rss version=\"2.0\" xmlns:atom=\"http://www.w3.org/2005/Atom\">\n");
+    xml.push_str("  <channel>\n");
+    xml.push_str(&format!(
+        "    <title>{}</title>\n",
+        escape_xml(&config.title)
+    ));
+    xml.push_str(&format!(
+        "    <link>{}/</link>\n",
+        escape_xml(&base)
+    ));
+    xml.push_str(&format!(
+        "    <description>{}</description>\n",
+        escape_xml(&config.tagline)
+    ));
+    if !config.base_url.is_empty() {
+        xml.push_str(&format!(
+            "    <atom:link href=\"{}/feed.xml\" rel=\"self\" type=\"application/rss+xml\"/>\n",
+            escape_xml(&base)
+        ));
+    }
+    for post in posts {
+        xml.push_str("    <item>\n");
+        xml.push_str(&format!(
+            "      <title>{}</title>\n",
+            escape_xml(&post.title)
+        ));
+        xml.push_str(&format!(
+            "      <link>{}/post/{}.html</link>\n",
+            escape_xml(&base),
+            escape_xml(&post.slug)
+        ));
+        xml.push_str(&format!(
+            "      <guid>{}/post/{}.html</guid>\n",
+            escape_xml(&base),
+            escape_xml(&post.slug)
+        ));
+        xml.push_str(&format!(
+            "      <pubDate>{}</pubDate>\n",
+            post.date.format("%a, %d %b %Y 00:00:00 +0000")
+        ));
+        if !post.summary.is_empty() {
+            xml.push_str(&format!(
+                "      <description>{}</description>\n",
+                escape_xml(&post.summary)
+            ));
+        }
+        xml.push_str("    </item>\n");
+    }
+    xml.push_str("  </channel>\n");
+    xml.push_str("</rss>\n");
+    xml
+}
+
+/// Escape XML special characters in a string.
+fn escape_xml(s: &str) -> String {
+    let mut out = String::with_capacity(s.len());
+    for c in s.chars() {
+        match c {
+            '&' => out.push_str("&amp;"),
+            '<' => out.push_str("&lt;"),
+            '>' => out.push_str("&gt;"),
+            '"' => out.push_str("&quot;"),
+            '\'' => out.push_str("&apos;"),
+            _ => out.push(c),
+        }
+    }
+    out
 }
 
 /// Build the Open Graph and Twitter Card meta tags for a page.

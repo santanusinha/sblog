@@ -12,6 +12,7 @@ output with any static host.
 - **Tag pages** generated automatically from post frontmatter
 - **Open Graph & Twitter Card** meta tags
 - **robots.txt & sitemap.xml** generated automatically for search engines and agents
+- **RSS 2.0 feed** (`feed.xml`) generated automatically for subscribers
 - **Reading time** estimated per post
 - **Full rebuild** with orphan cleanup
 - **Static asset copying** — CSS, images, and more
@@ -238,8 +239,9 @@ by the Rust generator at render time.
 | `css_href` | string | Path to the stylesheet (relative to current page) |
 | `home_href` | string | Path to the home page (relative) |
 | `archive_href` | string | Path to the archive page (relative) |
-| `tags_href` | string | Path to the tags index (relative) |
 | `about_href` | string | Path to the about page (relative) |
+| `feed_href` | string | Path to the RSS feed (relative) |
+| `active_nav` | string | Active nav item: `latest`, `archive`, or `about` |
 | `active_nav` | string | Active nav item: `latest`, `archive`, or `about` |
 
 ### Post Object (`post`)
@@ -312,7 +314,8 @@ Available on the **index**, **post**, and **about** pages.
 | Nav links | `base.html` | `home_href`, `archive_href`, `about_href`, `active_nav` | Header navigation (Home, Archive, About) |
 | Footer | `base.html` | `year`, `site.title`, `home_href`, `archive_href`, `about_href` | Footer with brand, links, copyright |
 | Main content block | `base.html` | `content` | The block each page overrides |
-| Page title block | `base.html` | `title` | Browser tab title |
+| Social meta block | `base.html` | `social_meta` | Open Graph / Twitter meta tags |
+| RSS feed link | `base.html` | `feed_href` | `<link rel="alternate">` for the RSS feed |
 | Meta description block | `base.html` | `description` | SEO description |
 | Social meta block | `base.html` | `social_meta` | Open Graph / Twitter meta tags |
 
@@ -394,7 +397,7 @@ sblog --full
 ```bash
 sblog
 ```
-
+- Regenerates `robots.txt`, `sitemap.xml`, and `feed.xml` when the config or any post changed
 - Rebuilds only posts whose source is newer than their output
 - Rebuilds aggregate pages (index, archive, posts) when any post changed
 - Regenerates `robots.txt` and `sitemap.xml` when the config or any post changed
@@ -417,9 +420,10 @@ public/
 ├── tags/               # Tag pages
 │   ├── index.html      # Tag index
 │   ├── meta.html
-│   ├── rust.html
-│   └── ...
-├── style.css           # Stylesheet (copied from static/)
+├── robots.txt           # Crawler rules (generated)
+├── sitemap.xml          # URL list for search engines (generated)
+├── feed.xml             # RSS 2.0 feed (generated)
+└── images/             # Static images (copied from static/)
 ├── robots.txt           # Crawler rules (generated)
 ├── sitemap.xml          # URL list for search engines (generated)
 └── images/             # Static images (copied from static/)

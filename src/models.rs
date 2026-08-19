@@ -85,6 +85,8 @@ pub struct Document {
     pub tags_href: String,
     /// The path to the about page, relative to the current page.
     pub about_href: String,
+    /// The path to the RSS feed, relative to the current page.
+    pub feed_href: String,
     pub active_nav: String,
     /// The list of posts (for the index and tag pages).
     pub posts: Vec<PostView>,
