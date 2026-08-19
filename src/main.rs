@@ -1045,12 +1045,13 @@ fn render_sitemap_xml(
         config.base_url.clone()
     };
 
-    let mut urls: Vec<String> = Vec::new();
-    urls.push("/".to_string());
-    urls.push("/archive.html".to_string());
-    urls.push("/posts.html".to_string());
-    urls.push("/about.html".to_string());
-    urls.push("/tags/index.html".to_string());
+    let mut urls: Vec<String> = vec![
+        "/".to_string(),
+        "/archive.html".to_string(),
+        "/posts.html".to_string(),
+        "/about.html".to_string(),
+        "/tags/index.html".to_string(),
+    ];
     for post in posts {
         urls.push(format!("/post/{}.html", post.slug));
     }
