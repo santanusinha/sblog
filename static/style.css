@@ -389,6 +389,88 @@ main.wrap {
   margin: 0;
 }
 
+/* Outline section in the post sidebar. */
+.sidebar-outline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.sidebar-outline li {
+  padding: 0.5rem 0;
+  line-height: 1.3;
+}
+
+.sidebar-outline li + li {
+  border-top: 1px solid var(--line);
+}
+
+.sidebar-outline .outline-link {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.6rem;
+  align-items: baseline;
+  color: var(--text);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.sidebar-outline .outline-link:hover {
+  color: var(--text-soft);
+}
+
+.sidebar-outline .outline-marker {
+  color: var(--text-faint);
+  font-size: 0.7rem;
+  line-height: inherit;
+  user-select: none;
+}
+
+.sidebar-outline .outline-label {
+  display: block;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* H1 headings — bold, no indent. */
+.sidebar-outline .outline-level-1 .outline-label {
+  font-weight: 600;
+}
+
+/* H2 headings — normal weight, no indent. */
+
+/* H3 headings — indent + smaller. */
+.sidebar-outline .outline-level-3 .outline-label {
+  padding-left: 1rem;
+}
+.sidebar-outline .outline-level-3 .outline-marker {
+  visibility: hidden;
+}
+
+/* H4 headings — deeper indent. */
+.sidebar-outline .outline-level-4 .outline-label {
+  padding-left: 2rem;
+}
+.sidebar-outline .outline-level-4 .outline-marker {
+  visibility: hidden;
+}
+
+/* H5 headings — even deeper. */
+.sidebar-outline .outline-level-5 .outline-label {
+  padding-left: 3rem;
+}
+.sidebar-outline .outline-level-5 .outline-marker {
+  visibility: hidden;
+}
+
+/* H6 headings — deepest. */
+.sidebar-outline .outline-level-6 .outline-label {
+  padding-left: 4rem;
+}
+.sidebar-outline .outline-level-6 .outline-marker {
+  visibility: hidden;
+}
 /* ============================================================
    Links (all-tags, all-posts)
    ============================================================ */

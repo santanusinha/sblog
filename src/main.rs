@@ -9,7 +9,9 @@ use syntect::parsing::SyntaxSet;
 use syntect::util::LinesWithEndings;
 use tera::{Context, Tera};
 
-use crate::models::{Document, Post, PostView, SidebarView, SiteConfig, SiteView, TagView};
+use crate::models::{
+    Document, HeadingView, Post, PostView, SidebarView, SiteConfig, SiteView, TagView,
+};
 
 mod models;
 
@@ -434,6 +436,9 @@ fn parse_post(path: &Path, text: &str) -> Result<Post, String> {
         .to_string();
 
     let body_html = render_markdown(body);
+    let body_html = anchorize_headings(&body_html);
+    let body_html = externalize_links(&body_html);
+    let headings = extract_headings(body);
 
     Ok(Post {
         title,
@@ -442,7 +447,128 @@ fn parse_post(path: &Path, text: &str) -> Result<Post, String> {
         summary,
         slug,
         body_html,
+        headings,
     })
+}
+
+/// Extract the headings from a markdown body for the outline.
+///
+/// The outline lists every heading in document order. It uses the heading
+/// text and level. The post title comes from frontmatter, not from the
+/// body, so H1 headings in the body are valid section headings.
+fn extract_headings(text: &str) -> Vec<HeadingView> {
+    let mut options = Options::empty();
+    options.insert(Options::ENABLE_HEADING_ATTRIBUTES);
+
+    let parser = Parser::new_ext(text, options);
+    let mut headings = Vec::new();
+    let mut current: Option<(u8, String)> = None;
+
+    for event in parser {
+        match event {
+            Event::Start(Tag::Heading { level, .. }) => {
+                current = Some((level as u8, String::new()));
+            }
+            Event::Text(t) if current.is_some() => {
+                if let Some((_, text)) = &mut current {
+                    text.push_str(&t);
+                }
+            }
+            Event::End(TagEnd::Heading(_)) => {
+                if let Some((level, text)) = current.take() {
+                    let trimmed = text.trim().to_string();
+                    if !trimmed.is_empty() {
+                        let id = slugify_heading(&trimmed);
+                        headings.push(HeadingView {
+                            text: trimmed,
+                            level,
+                            id,
+                        });
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+
+    headings
+}
+
+/// Turn heading text into an anchor ID. Lowercase, replace spaces with
+/// hyphens, strip non-alphanumeric characters.
+fn slugify_heading(text: &str) -> String {
+    let mut out = String::with_capacity(text.len());
+    for c in text.chars() {
+        if c.is_ascii_alphanumeric() {
+            out.push(c.to_ascii_lowercase());
+        } else if c.is_whitespace() || c == '-' || c == '_' {
+            out.push('-');
+        }
+    }
+    if out.is_empty() {
+        out.push_str("heading");
+    }
+    out
+}
+
+/// Post-process HTML to add anchor IDs to heading tags (<h1> through <h6>).
+/// The ID is generated from the heading text using slugify_heading.
+/// This makes the outline sidebar items linkable to specific sections.
+fn anchorize_headings(html: &str) -> String {
+    let mut out = String::with_capacity(html.len());
+    let mut rest = html;
+
+    while let Some(pos) = rest.find("<h") {
+        out.push_str(&rest[..pos]);
+        rest = &rest[pos..];
+
+        let bytes = rest.as_bytes();
+        let is_heading =
+            bytes.len() > 3 && bytes[2] >= b'1' && bytes[2] <= b'6' && bytes[3] == b'>';
+        if !is_heading {
+            out.push_str(&rest[..1]);
+            rest = &rest[1..];
+            continue;
+        }
+
+        let level = bytes[2] as char;
+        rest = &rest[4..];
+
+        let close_tag = format!("</h{level}>");
+        if let Some(end) = rest.find(&close_tag) {
+            let inner = &rest[..end];
+            // Strip inline HTML tags from inner text for clean ID.
+            let text = inner
+                .replace("<em>", "")
+                .replace("</em>", "")
+                .replace("<strong>", "")
+                .replace("</strong>", "")
+                .replace("<code>", "")
+                .replace("</code>", "")
+                .replace("<a href", "")
+                .replace("</a>", "");
+            let text_only = text
+                .replace('<', " <")
+                .split('>')
+                .filter(|s| !s.starts_with(' ') && !s.starts_with('/'))
+                .collect::<Vec<_>>()
+                .join(" ");
+            let id = slugify_heading(&text_only.trim());
+            out.push_str("<h");
+            out.push(level);
+            out.push_str(" id=\"");
+            out.push_str(&id);
+            out.push_str("\">");
+            out.push_str(inner);
+            out.push_str(&close_tag);
+            rest = &rest[end + close_tag.len()..];
+        } else {
+            out.push_str(&rest[..4]);
+            rest = &rest[4..];
+        }
+    }
+    out.push_str(rest);
+    out
 }
 
 /// Split a file into its YAML frontmatter and markdown body.
@@ -735,6 +861,8 @@ fn document_for_about(root: &Path, config: &SiteConfig, posts: &[Post]) -> Docum
     let about_text = fs::read_to_string(&about_path).unwrap_or_default();
     let (_, body) = split_frontmatter(&about_text).unwrap_or(("", ""));
     let body_html = render_markdown(body);
+    let body_html = anchorize_headings(&body_html);
+    let body_html = externalize_links(&body_html);
     let about_view = PostView {
         title: "About Me".to_string(),
         summary: "Software architect, distributed systems engineer, and open-source hacker."
@@ -745,6 +873,7 @@ fn document_for_about(root: &Path, config: &SiteConfig, posts: &[Post]) -> Docum
         read_time: String::new(),
         tags: Vec::new(),
         body_html,
+        headings: Vec::new(),
     };
     let sidebar = sidebar_view(config, posts, "post/", "tags/", "", "posts.html");
     Document {
@@ -933,7 +1062,38 @@ fn post_view(post: &Post, href_prefix: &str, tag_prefix: &str) -> PostView {
             })
             .collect(),
         body_html: post.body_html.clone(),
+        headings: post.headings.clone(),
     }
+}
+
+/// Add target="_blank" and rel="noopener" to every external link in HTML.
+///
+/// An external link is any `<a href="http...">` that points outside the
+/// site. Internal links (relative paths) are left unchanged.
+fn externalize_links(html: &str) -> String {
+    let mut out = String::with_capacity(html.len());
+    let mut rest = html;
+
+    while let Some(pos) = rest.find("<a ") {
+        out.push_str(&rest[..pos]);
+        rest = &rest[pos..];
+
+        if let Some(end) = rest.find('>') {
+            let tag = &rest[..end + 1];
+            if tag.contains("href=\"http") && !tag.contains("target=") {
+                let base = &tag[..tag.len() - 1];
+                out.push_str(&format!("{} target=\"_blank\" rel=\"noopener\">", base));
+            } else {
+                out.push_str(tag);
+            }
+            rest = &rest[end + 1..];
+        } else {
+            out.push_str(rest);
+            break;
+        }
+    }
+    out.push_str(rest);
+    out
 }
 
 fn sidebar_view(

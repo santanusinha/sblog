@@ -51,6 +51,8 @@ pub struct Post {
     pub summary: String,
     pub slug: String,
     pub body_html: String,
+    /// The headings extracted from the post body, for the outline.
+    pub headings: Vec<HeadingView>,
 }
 
 /// An abstract document: the parsed content that templates render.
@@ -115,6 +117,19 @@ pub struct PostView {
     pub read_time: String,
     pub tags: Vec<TagView>,
     pub body_html: String,
+    /// The headings extracted from the post body, for the outline.
+    pub headings: Vec<HeadingView>,
+}
+
+/// A heading extracted from a post body, shaped for the templates.
+#[derive(Serialize, Clone)]
+pub struct HeadingView {
+    /// The heading text.
+    pub text: String,
+    /// The heading level (1-6).
+    pub level: u8,
+    /// The anchor ID for linking to the heading in the article body.
+    pub id: String,
 }
 
 /// A tag shaped for the templates.
